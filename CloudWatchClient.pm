@@ -74,6 +74,7 @@ our $unsafe_characters = "^A-Za-z0-9\-\._~";
 our $region;
 our $avail_zone;
 our $instance_id;
+our $instance_name;
 our $instance_type;
 our $image_id;
 our $as_group_name; 	 
@@ -96,6 +97,32 @@ sub get_meta_data
   }
 
   if ($use_cache) {
+    write_meta_data($resource, $data_value);
+  }
+
+  return $data_value;
+}
+
+#
+# Queries for a tag value for the current EC2 instance.
+#
+sub get_tag
+{
+  my $tag_name = shift;
+  my $resource = "/tags/".$tag_name;
+  my $use_cache = shift;
+  my $data_value = read_meta_data($resource, $meta_data_short_ttl);
+
+  my $region = get_region();
+  my $instance_id = get_instance_id();
+  my $cmd = "aws ec2 describe-tags --region $region --filters \"Name=resource-id,Values=$instance_id\" \"Name=key,Values=$tag_name\" --output text | cut -f5";
+  $data_value = $data_value ? $data_value : `$cmd`;
+
+  if (!$data_value){
+    return "";
+  }
+
+  if ($use_cache){
     write_meta_data($resource, $data_value);
   }
 
@@ -269,6 +296,17 @@ sub get_instance_id
     $instance_id = get_meta_data('/instance-id', USE_CACHE);
   }
   return $instance_id;
+}
+
+#
+# Obtains EC2 instance name (the value of it's Name tag).
+#
+sub get_instance_name
+{
+  if (!$instance_name) {
+    $instance_name = get_tag('Name', USE_CACHE);
+  }
+  return $instance_name;
 }
 
 #

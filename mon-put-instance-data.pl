@@ -336,6 +336,7 @@ if (!$report_mem_util && !$report_mem_used && !$report_mem_avail
 
 my $timestamp = CloudWatchClient::get_offset_time(NOW);
 my $instance_id = CloudWatchClient::get_instance_id();
+my $instance_name = CloudWatchClient::get_instance_name();
 
 if (!defined($instance_id) || length($instance_id) == 0) {
   exit_with_error("Cannot obtain instance id from EC2 meta-data.");
@@ -462,7 +463,7 @@ sub add_metric
   my $aggregated_only = defined($aggregated) && $aggregated == AGGREGATED_ONLY;
   
   if (!$auto_scaling_only && !$aggregated_only) {
-    %dims = (('InstanceId' => $instance_id), %xdims);
+    %dims = (('InstanceId' => $instance_id, 'InstanceName' => $instance_name), %xdims);
     add_single_metric($name, $unit, $value, \%dims);
   }
   
